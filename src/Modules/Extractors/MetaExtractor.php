@@ -177,11 +177,6 @@ class MetaExtractor extends AbstractModule implements ModuleInterface {
             if (count(explode(' ', $curTitle)) < 3) {
                 $curTitle = preg_replace('/[^\|\-]*[\|\-](.*)/i', '$1', $origTitle);
             }
-        } elseif (strpos($curTitle, ': ') !== false) {
-            $curTitle = preg_replace('/.*:(.*)/i', '$1', $origTitle);
-            if (count(explode(' ', $curTitle)) < 3) {
-                $curTitle = preg_replace('/[^:]*[:](.*)/i', '$1', $origTitle);
-            }
         } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
             $hOnes = $this->article()->getDoc()->getElementsByTagName('h1');
             if ($hOnes->length == 1) {
