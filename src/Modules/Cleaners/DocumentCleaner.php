@@ -50,6 +50,7 @@ class DocumentCleaner extends AbstractModule implements ModuleInterface {
         'konafilter', 'KonaFilter', 'breadcrumbs', 'wp-caption-text', 'source',
         'legende', 'ajoutVideo', 'timestamp', 'js_replies', 'creative_commons', 'topics',
         'pagination', 'mtl', 'author', 'credit', 'toc_container', 'sharedaddy',
+        'slider', 'slick-slider',
     ];
 
     /** @var array Element tagNames exempt from removal */
