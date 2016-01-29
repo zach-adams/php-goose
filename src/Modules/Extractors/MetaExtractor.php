@@ -21,7 +21,7 @@ class MetaExtractor extends AbstractModule implements ModuleInterface {
 
     /** @var string[] */
     protected static $SPLITTER_CHARS = [
-        '|', '-', '»', ':',
+        '|', '-', 'Â»', ':',
     ];
 
     /** @var string */
@@ -142,24 +142,59 @@ class MetaExtractor extends AbstractModule implements ModuleInterface {
      * @return string
      */
     private function getTitle() {
+
+        /**
+         * Get possible sources for the title
+         */
         $openGraph = $this->article()->getOpenGraph();
+        $metaNode = $this->getNodesByLowercasePropertyValue($this->article()->getDoc(), 'meta', 'name', 'headline');
+        $titleNode = $this->article()->getDoc()->find('html > head > title');
 
-        // Rely on OpenGraph in case we have the data
-        if (isset($openGraph['title'])) {
-            return $this->cleanTitle($openGraph['title']);
+        $curTitle = '';
+
+        /**
+         * First try openGraph title since it has the highest chance of being accurate
+         * Second try on meta tag for name or headline
+         * Third try just the plain title tag
+         */
+        if (isset($openGraph['title']) && !empty($openGraph['title'])) {
+            $curTitle = $this->cleanTitle($openGraph['title']);
+        } elseif($metaNode->count()) {
+            $curTitle = $this->cleanTitle($metaNode->first()->attr('content'));
+        } elseif ($titleNode->count()) {
+            $curTitle = $this->cleanTitle(Helper::textNormalise($titleNode->first()->text()));
+        } else {
+            return '';
         }
 
-        $nodes = $this->getNodesByLowercasePropertyValue($this->article()->getDoc(), 'meta', 'name', 'headline');
-        if ($nodes->count()) {
-            return $this->cleanTitle($nodes->first()->attr('content'));
+        $origTitle = $curTitle;
+
+        /**
+         * This section is from PHP Readability and cleans the title of clutter
+         */
+        if (preg_match('/ [\|\-] /', $curTitle)) {
+            $curTitle = preg_replace('/(.*)[\|\-] .*/i', '$1', $origTitle);
+            if (count(explode(' ', $curTitle)) < 3) {
+                $curTitle = preg_replace('/[^\|\-]*[\|\-](.*)/i', '$1', $origTitle);
+            }
+        } elseif (strpos($curTitle, ': ') !== false) {
+            $curTitle = preg_replace('/.*:(.*)/i', '$1', $origTitle);
+            if (count(explode(' ', $curTitle)) < 3) {
+                $curTitle = preg_replace('/[^:]*[:](.*)/i', '$1', $origTitle);
+            }
+        } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
+            $hOnes = $this->article()->getDoc()->getElementsByTagName('h1');
+            if ($hOnes->length == 1) {
+                $curTitle = $hOnes->first()->text();
+            }
         }
 
-        $nodes = $this->article()->getDoc()->find('html > head > title');
-        if ($nodes->count()) {
-            return $this->cleanTitle(Helper::textNormalise($nodes->first()->text()));
+        $curTitle = trim($curTitle);
+        if (count(explode(' ', $curTitle)) <= 4) {
+            $curTitle = $origTitle;
         }
 
-        return '';
+        return $curTitle;
     }
 
     /**
